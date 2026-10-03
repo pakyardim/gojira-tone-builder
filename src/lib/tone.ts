@@ -78,22 +78,13 @@ export const AMPS: Amp[] = [
   },
 ];
 
-const AMP_KEY = "gojira-amp";
+export const AMP_PARAM = "amp";
 
-export function loadAmp(): AmpId {
-  try {
-    const stored = localStorage.getItem(AMP_KEY);
-    if (AMPS.some((a) => a.id === stored)) return stored as AmpId;
-  } catch {
-    // storage unavailable
-  }
-  return "rst";
-}
+/** The `amp` line the AI fills in: 0-2 in AMPS order. */
+export const AMP_CODES = AMPS.map((a, i) => ({ code: i, amp: a }));
 
-export function saveAmp(amp: AmpId) {
-  try {
-    localStorage.setItem(AMP_KEY, amp);
-  } catch {
-    // storage unavailable
-  }
+export const DEFAULT_AMP: Amp = AMPS[0];
+
+export function ampFromCode(code: number | undefined): Amp | undefined {
+  return AMP_CODES.find((c) => c.code === Math.round(code ?? NaN))?.amp;
 }

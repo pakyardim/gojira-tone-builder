@@ -1,41 +1,18 @@
 import { OPTIONAL_MODULES, type OptionalModuleId } from "../lib/modules.ts";
-import { AMPS, type AmpId } from "../lib/tone.ts";
 import { Card, Note } from "./ui.tsx";
 
 interface Props {
-  amp: AmpId;
-  onAmpChange: (amp: AmpId) => void;
   enabled: ReadonlySet<OptionalModuleId>;
   onToggle: (id: OptionalModuleId) => void;
 }
 
-export function AmpCard({ amp, onAmpChange, enabled, onToggle }: Props) {
-  const current = AMPS.find((a) => a.id === amp)!;
-
+export function AmpCard({ enabled, onToggle }: Props) {
   return (
-    <Card title="2 · Amfi ve Eklentiler">
-      <div role="group" aria-label="Amfi" className="inline-flex rounded-[9px] border border-border bg-surface-2 p-0.5">
-        {AMPS.map((a) => (
-          <button
-            key={a.id}
-            type="button"
-            aria-pressed={a.id === amp}
-            onClick={() => onAmpChange(a.id)}
-            className={`cursor-pointer rounded-[7px] px-4 py-1.75 text-[0.92rem] font-semibold transition-colors ${
-              a.id === amp ? "bg-accent text-white" : "text-fg-dim hover:text-fg"
-            }`}
-          >
-            {a.label}
-          </button>
-        ))}
-      </div>
-      <Note className="mt-2.5">
-        <b className="text-fg">
-          {current.label} ({current.name}):
-        </b>{" "}
-        {current.hint} Preset'i açınca Gojira X'te bu amfi seçili gelir. Gojira X preset'i her şeyi tek dosyada içerir —
-        amfi, gate, pitch (WOW, OCT), pre FX (OD, DRT, PHSR, CHR), EQ ve post FX (DLY, REV) — ve IMPORT ile hepsi
-        birlikte yüklenir.
+    <Card title="2 · Eklentiler">
+      <Note className="mb-4">
+        Amfiyi (RST / HOT / CLN) AI tona göre kendisi seçer; 4. adımda yapıştırdığın cevaptaki <b>amp</b> satırından
+        okunur. Gojira X preset'i her şeyi tek dosyada içerir — amfi, gate, pitch (WOW, OCT), pre FX (OD, DRT, PHSR,
+        CHR), EQ ve post FX (DLY, REV) — ve IMPORT ile hepsi birlikte yüklenir.
       </Note>
 
       <fieldset className="mt-4">
