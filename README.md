@@ -7,7 +7,9 @@ Paste tone settings from an AI (`gain: 72`, `comp_ratio: 4`, …) and download t
 - optionally Logic Pro plug-in settings (`.pst`) for **Channel EQ**, **Compressor** and
   **Noise Gate**, loaded via each plug-in's settings menu → Load
 
-When more than one file is produced they download together as a single `<name>.zip`.
+With all three Logic plug-ins selected, a single Logic channel strip setting (`.cst`) is produced instead: it
+contains the whole Noise Gate → Gojira X → Channel EQ → Compressor chain and loads in one step from the channel
+strip's Setting menu. Otherwise, when more than one file is produced they download together as a single `<name>.zip`.
 
 Built with Vite, React, TypeScript and Tailwind CSS v4. Everything runs in the browser.
 
@@ -33,6 +35,11 @@ changed.
   (format in [src/lib/pst.ts](src/lib/pst.ts)). Templates: `src/assets/logic-*-default.pst`, copied
   from `Logic Pro.app/Contents/Resources/Plug-In Settings/<Plug-in>/#default.pst`. Parameter indices
   come from each plug-in's `CSParameterOrder.plist`, checked against Logic's factory settings.
+
+The `.cst` ([src/lib/cst.ts](src/lib/cst.ts)) is patched from [src/assets/logic-channel-strip-template.cst](src/assets/logic-channel-strip-template.cst),
+a channel strip saved from Logic with exactly that plug-in chain: the three Logic plug-ins are embedded `.pst` files,
+Archetype's state is an XML (`VC2!` + length) inside a base64 plist. Everything is patched in place at the same
+length, since the container has nested size fields. The AI picks the amp itself (`amp: 0-2` line in the prompt).
 
 ## Layout
 

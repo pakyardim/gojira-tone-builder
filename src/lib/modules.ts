@@ -294,6 +294,22 @@ export const GOJIRA_POST_FX: Module = {
   ],
 };
 
+const SLOPES: EnumOption[] = [
+  { code: 1, label: "12 dB/oct", value: 2 },
+  { code: 2, label: "24 dB/oct", value: 4 },
+];
+
+const slope = (name: string, label: string, index: number, on: number): Param => ({
+  name,
+  label,
+  unit: "",
+  min: 1,
+  max: 2,
+  target: index,
+  options: SLOPES,
+  sets: [[on, 1]],
+});
+
 const peak = (n: number, on: number): Param[] => [
   pst(`ceq_peak${n}_freq`, `Peak ${n} Frequency`, "Hz", 20, 20000, on + 1, on),
   pst(`ceq_peak${n}_gain`, `Peak ${n} Gain`, "dB", -12, 12, on + 2, on),
@@ -307,25 +323,33 @@ export const CHANNEL_EQ: Module = {
     kind: "pst",
     plugin: "Channel EQ",
     template: decodeDataUrl(channelEqTemplateUrl),
-    fixed: [[41, 0]],
+    // Analyzer off (its range changes the graph's dB axis), Q-Couple off so the Q the AI gives is the Q you get.
+    fixed: [
+      [33, 0],
+      [41, 0],
+    ],
   },
   params: [
     {
       ...pst("ceq_low_cut", "Low Cut Frequency", "Hz", 20, 1000, 1, 0),
       hint: "20 = kapalı",
     },
+    slope("ceq_low_cut_slope", "Low Cut Slope", 2, 0),
     pst("ceq_low_shelf_freq", "Low Shelf Frequency", "Hz", 20, 1000, 5, 4),
     pst("ceq_low_shelf_gain", "Low Shelf Gain", "dB", -12, 12, 6, 4),
+    pst("ceq_low_shelf_q", "Low Shelf Q", "", 0.1, 10, 7, 4),
     ...peak(1, 8),
     ...peak(2, 12),
     ...peak(3, 16),
     ...peak(4, 20),
     pst("ceq_high_shelf_freq", "High Shelf Frequency", "Hz", 1000, 20000, 25, 24),
     pst("ceq_high_shelf_gain", "High Shelf Gain", "dB", -12, 12, 26, 24),
+    pst("ceq_high_shelf_q", "High Shelf Q", "", 0.1, 10, 27, 24),
     {
       ...pst("ceq_high_cut", "High Cut Frequency", "Hz", 1000, 20000, 29, 28),
       hint: "20000 = kapalı",
     },
+    slope("ceq_high_cut_slope", "High Cut Slope", 30, 28),
   ],
 };
 
@@ -395,7 +419,7 @@ export const OPTIONAL_MODULES: OptionalModuleInfo[] = [
   {
     id: "channelEq",
     title: "Logic Channel EQ",
-    description: "Parametrik EQ: low/high cut, shelf'ler, 4 peak bandı.",
+    description: "Parametrik EQ: low/high cut ve eğimleri, shelf'ler, 4 peak bandı (Q dahil).",
   },
   {
     id: "comp",
