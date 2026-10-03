@@ -41,7 +41,7 @@ export function PromptCard({ prompt }: { prompt: string }) {
         </summary>
         <div className={`${monoBoxClass} mt-2 cursor-text select-text`}>{prompt}</div>
       </details>
-      <Note className="mt-2.5">Parametre listesi ve aralıklar seçili eklentilere göre otomatik değişir.</Note>
+      <Note className="mt-2.5">Parametre listesi ve aralıklar seçili amfi ve eklentilere göre otomatik değişir.</Note>
     </Card>
   );
 }

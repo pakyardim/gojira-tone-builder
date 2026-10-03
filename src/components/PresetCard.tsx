@@ -61,7 +61,7 @@ export function PresetCard({ entries, chain, name, onNameChange, onNameReset, on
             </button>
           )}
         </div>
-        <Button onClick={() => onDownload(text)}>{logicPlugins.length === 3 ? "Kanal şeridini indir" : logicPlugins.length ? "Zip olarak indir" : "Preset indir"}</Button>
+        <Button onClick={() => onDownload(text)}>{logicPlugins.length ? "Zip olarak indir" : "Preset indir"}</Button>
         <Button variant="secondary" onClick={onClearLog}>
           Log'u temizle
         </Button>
@@ -80,16 +80,7 @@ export function PresetCard({ entries, chain, name, onNameChange, onNameReset, on
         <b>⋮</b> → <b>IMPORT</b>'a bas ve dosyayı seç. AI'nin vermediği ayarlar Gojira X'in Default preset'indeki gibi
         kalır.
       </Note>
-      {logicPlugins.length === 3 && (
-        <Note className="mt-2">
-          <b className="text-fg">Kanal şeridi (.cst):</b> Üç Logic eklentisi de seçiliyken zip yerine tek bir{" "}
-          <b>.cst</b> iner ve Noise Gate → Gojira X → Channel EQ → Compressor zincirinin hepsini içerir. Dosyayı{" "}
-          <b>~/Music/Audio Music Apps/Channel Strip Settings/Track</b> klasörüne kopyala; Logic'te kanal şeridinin
-          üstündeki <b>Setting</b> düğmesinden ya da Library'den (<b>Y</b>) <b>User Channel Strip Settings → Track</b>{" "}
-          altında seç. Ayrı Gojira X preset'ini import etmen gerekmez.
-        </Note>
-      )}
-      {logicPlugins.length > 0 && logicPlugins.length < 3 && (
+      {logicPlugins.length > 0 && (
         <Note className="mt-2">
           <b className="text-fg">Logic eklentileri (.pst):</b> Kanal şeridine {logicPlugins.join(", ")} ekle; sıra{" "}
           <b>{chain.join(" → ")}</b> olsun. Her eklentinin penceresinin üstündeki ayar menüsünden (<b>#default</b>{" "}

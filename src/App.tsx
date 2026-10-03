@@ -11,20 +11,26 @@ import { MIN_PRESET_NAME_LENGTH } from "./lib/preset.ts";
 import { buildPrompt } from "./lib/prompt.ts";
 import { parseSettingsText } from "./lib/settings.ts";
 import { presetNameFor, type Song } from "./lib/song.ts";
-import { AMP_PARAM, DEFAULT_AMP, ampFromCode } from "./lib/tone.ts";
+import { AMPS, loadAmp, saveAmp, type AmpId } from "./lib/tone.ts";
 
 export default function App() {
   const { entries, log, clear } = useLog();
+  const [amp, setAmp] = useState<AmpId>(loadAmp);
   const [enabled, setEnabled] = useState(loadEnabledModules);
   const [song, setSong] = useState<Song>({ title: "", artist: "" });
   const [customName, setCustomName] = useState<string | null>(null);
 
-  // The AI picks the amp; its parameter names are the same for every amp, so the prompt lists RST's.
-  const promptModules = useMemo(() => modulesFor(DEFAULT_AMP, enabled), [enabled]);
-  const prompt = useMemo(() => buildPrompt(song, promptModules), [song, promptModules]);
+  const currentAmp = AMPS.find((a) => a.id === amp)!;
+  const modules = useMemo(() => modulesFor(currentAmp, enabled), [currentAmp, enabled]);
+  const prompt = useMemo(() => buildPrompt(song, currentAmp, modules), [song, currentAmp, modules]);
   const autoName = presetNameFor(song);
   const presetName = customName ?? autoName;
-  const chain = [...new Set(promptModules.map((m) => (m.output.kind === "pst" ? m.output.plugin : "Gojira X")))];
+  const chain = [...new Set(modules.map((m) => (m.output.kind === "pst" ? m.output.plugin : "Gojira X")))];
+
+  const handleAmpChange = (next: AmpId) => {
+    setAmp(next);
+    saveAmp(next);
+  };
 
   const handleToggle = (id: OptionalModuleId) => {
     const next = new Set(enabled);
@@ -39,22 +45,11 @@ export default function App() {
       log(`Preset adı en az ${MIN_PRESET_NAME_LENGTH} karakter olmalı.`, "miss");
       return;
     }
-    const allParsed = parseSettingsText(text);
-    const parsed = allParsed.filter((p) => p.name !== AMP_PARAM);
+    const parsed = parseSettingsText(text);
     if (parsed.length === 0) {
       log("Metinde 'parametre: değer' formatında satır bulunamadı.", "miss");
       return;
     }
-
-    const chosenAmp = ampFromCode(allParsed.find((p) => p.name === AMP_PARAM)?.value);
-    const currentAmp = chosenAmp ?? DEFAULT_AMP;
-    const modules = modulesFor(currentAmp, enabled);
-    log(
-      chosenAmp
-        ? `✓ amp → ${currentAmp.label} (${currentAmp.name})`
-        : `— "amp" satırı yok ya da geçersiz; ${currentAmp.label} (${currentAmp.name}) kullanıldı.`,
-      chosenAmp ? "hit" : "miss",
-    );
 
     let result: Generation;
     try {
@@ -65,7 +60,7 @@ export default function App() {
     }
 
     for (const unknown of result.unknown) {
-      log(`— bilinmeyen parametre: "${unknown}" (seçilen amfide/eklentilerde yok, atlandı)`, "miss");
+      log(`— bilinmeyen parametre: "${unknown}" (seçili amfi/eklentilerde yok, atlandı)`, "miss");
     }
     for (const { name: paramName, value } of result.invalid) {
       log(`— geçersiz seçenek: ${paramName} = ${value} (atlandı)`, "miss");
@@ -79,18 +74,14 @@ export default function App() {
       log(`— ${module.title} için değer gelmedi, dosyası oluşturulmadı.`, "miss");
     }
     if (result.files.length === 0) {
-      log("Seçili eklentilere uyan hiçbir parametre yok; dosya indirilmedi.", "miss");
+      log("Seçili amfi/eklentilere uyan hiçbir parametre yok; dosya indirilmedi.", "miss");
       return;
     }
 
     const download = packageFiles(result.files, safeFileName(name));
     downloadFile(download);
     const howTo = (file: OutputFile) =>
-      file.plugin === "Channel Strip"
-        ? "~/Music/Audio Music Apps/Channel Strip Settings/Track klasörüne koy, Logic'te Setting → User Channel Strip Settings (4 eklenti birden yüklenir)"
-        : file.plugin
-          ? `Logic ${file.plugin} → ayar menüsü → Load`
-          : "Gojira X'te ⋮ → IMPORT";
+      file.plugin ? `Logic ${file.plugin} → ayar menüsü → Load` : "Gojira X'te ⋮ → IMPORT";
     if (result.files.length === 1) {
       log(`✓ "${download.fileName}" indirildi → ${howTo(result.files[0])}`, "hit");
     } else {
@@ -108,7 +99,7 @@ export default function App() {
       </p>
 
       <SongCard song={song} onChange={setSong} />
-      <AmpCard enabled={enabled} onToggle={handleToggle} />
+      <AmpCard amp={amp} onAmpChange={handleAmpChange} enabled={enabled} onToggle={handleToggle} />
       <PromptCard prompt={prompt} />
       <PresetCard
         entries={entries}

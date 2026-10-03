@@ -6,5 +6,5 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   // Binary preset/setting templates, imported with `?inline` (see src/lib/preset.ts, src/lib/modules.ts).
-  assetsInclude: ['**/*.bin', '**/*.pst', '**/*.cst'],
+  assetsInclude: ['**/*.bin', '**/*.pst'],
 })
