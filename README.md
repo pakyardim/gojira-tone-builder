@@ -8,8 +8,8 @@ Paste tone settings from an AI (`gain: 72`, `comp_ratio: 4`, …) and download t
   **Noise Gate**, loaded via each plug-in's settings menu → Load
 
 With all three Logic plug-ins selected, a single Logic channel strip setting (`.cst`) is produced instead: it
-contains the whole Noise Gate → Gojira X → Channel EQ → Compressor chain and loads in one step from the channel
-strip's Setting menu. Otherwise, when more than one file is produced they download together as a single `<name>.zip`.
+contains the whole Noise Gate → Gojira X → Channel EQ → Compressor chain and loads in one step: copy it to
+`~/Music/Audio Music Apps/Channel Strip Settings/Track/` and pick it from the channel strip's Setting menu or the Library. Otherwise, when more than one file is produced they download together as a single `<name>.zip`.
 
 Built with Vite, React, TypeScript and Tailwind CSS v4. Everything runs in the browser.
 

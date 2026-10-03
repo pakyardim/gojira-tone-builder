@@ -87,7 +87,7 @@ export default function App() {
     downloadFile(download);
     const howTo = (file: OutputFile) =>
       file.plugin === "Channel Strip"
-        ? "Logic kanal şeridinde Setting → Load Channel Strip Setting (4 eklenti birden yüklenir)"
+        ? "~/Music/Audio Music Apps/Channel Strip Settings/Track klasörüne koy, Logic'te Setting → User Channel Strip Settings (4 eklenti birden yüklenir)"
         : file.plugin
           ? `Logic ${file.plugin} → ayar menüsü → Load`
           : "Gojira X'te ⋮ → IMPORT";

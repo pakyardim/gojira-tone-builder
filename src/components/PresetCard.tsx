@@ -83,10 +83,10 @@ export function PresetCard({ entries, chain, name, onNameChange, onNameReset, on
       {logicPlugins.length === 3 && (
         <Note className="mt-2">
           <b className="text-fg">Kanal şeridi (.cst):</b> Üç Logic eklentisi de seçiliyken zip yerine tek bir{" "}
-          <b>.cst</b> iner ve Noise Gate → Gojira X → Channel EQ → Compressor zincirinin hepsini içerir. Kanal şeridinin
-          üstündeki <b>Setting</b> düğmesinden <b>Load Channel Strip Setting…</b> ile yükle (ya da dosyayı{" "}
-          <b>~/Music/Audio Music Apps/Channel Strip Settings/Track</b> klasörüne koyup Library'den seç). Ayrı Gojira X
-          preset'ini import etmen gerekmez.
+          <b>.cst</b> iner ve Noise Gate → Gojira X → Channel EQ → Compressor zincirinin hepsini içerir. Dosyayı{" "}
+          <b>~/Music/Audio Music Apps/Channel Strip Settings/Track</b> klasörüne kopyala; Logic'te kanal şeridinin
+          üstündeki <b>Setting</b> düğmesinden ya da Library'den (<b>Y</b>) <b>User Channel Strip Settings → Track</b>{" "}
+          altında seç. Ayrı Gojira X preset'ini import etmen gerekmez.
         </Note>
       )}
       {logicPlugins.length > 0 && logicPlugins.length < 3 && (
