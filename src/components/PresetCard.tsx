@@ -5,6 +5,7 @@ import { Button, Card, fieldClass, monoBoxClass, Note, rowClass } from "./ui.tsx
 interface Props {
   entries: LogEntry[];
   chain: string[];
+  sectionCount: number;
   name: string;
   onNameChange: (name: string) => void;
   onNameReset?: () => void;
@@ -21,7 +22,16 @@ noise_gate_threshold: -60`;
 
 const KIND_CLASS = { hit: "text-ok", miss: "text-accent" } as const;
 
-export function PresetCard({ entries, chain, name, onNameChange, onNameReset, onDownload, onClearLog }: Props) {
+export function PresetCard({
+  entries,
+  chain,
+  sectionCount,
+  name,
+  onNameChange,
+  onNameReset,
+  onDownload,
+  onClearLog,
+}: Props) {
   const logicPlugins = chain.filter((p) => p !== "Gojira X");
   const [text, setText] = useState("");
   const logRef = useRef<HTMLDivElement>(null);
@@ -32,7 +42,7 @@ export function PresetCard({ entries, chain, name, onNameChange, onNameReset, on
   }, [entries]);
 
   return (
-    <Card title="4 · Dosyaları Oluştur">
+    <Card title="5 · Dosyaları Oluştur">
       <textarea
         className={`${fieldClass} block min-h-32.5 w-full resize-y font-mono leading-normal`}
         placeholder={PLACEHOLDER}
@@ -61,7 +71,13 @@ export function PresetCard({ entries, chain, name, onNameChange, onNameReset, on
             </button>
           )}
         </div>
-        <Button onClick={() => onDownload(text)}>{logicPlugins.length === 3 ? "Kanal şeridini indir" : logicPlugins.length ? "Zip olarak indir" : "Preset indir"}</Button>
+        <Button onClick={() => onDownload(text)}>
+          {sectionCount > 1 || (logicPlugins.length > 0 && logicPlugins.length < 3)
+            ? "Zip olarak indir"
+            : logicPlugins.length === 3
+              ? "Kanal şeridini indir"
+              : "Preset indir"}
+        </Button>
         <Button variant="secondary" onClick={onClearLog}>
           Log'u temizle
         </Button>

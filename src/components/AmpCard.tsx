@@ -8,10 +8,10 @@ interface Props {
 
 export function AmpCard({ enabled, onToggle }: Props) {
   return (
-    <Card title="2 · Eklentiler">
+    <Card title="3 · Eklentiler">
       <Note className="mb-4">
-        Amfiyi (RST / HOT / CLN) AI tona göre kendisi seçer; 4. adımda yapıştırdığın cevaptaki <b>amp</b> satırından
-        okunur. Gojira X preset'i her şeyi tek dosyada içerir — amfi, gate, pitch (WOW, OCT), pre FX (OD, DRT, PHSR,
+        Amfiyi (RST / HOT / CLN) AI tona göre kendisi seçer; 5. adımda yapıştırdığın cevaptaki <b>amp</b> satırından
+        okunur (2. adımda bölüm seçtiysen amfi bölüm başına senin seçtiğin olur). Gojira X preset'i her şeyi tek dosyada içerir — amfi, gate, pitch (WOW, OCT), pre FX (OD, DRT, PHSR,
         CHR), EQ ve post FX (DLY, REV) — ve IMPORT ile hepsi birlikte yüklenir.
       </Note>
 

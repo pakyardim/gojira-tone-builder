@@ -23,9 +23,9 @@ export function PromptCard({ prompt }: { prompt: string }) {
   };
 
   return (
-    <Card title="3 · AI'ye Atacağın Prompt">
+    <Card title="4 · AI'ye Atacağın Prompt">
       <Note className="mb-2.5">
-        Bu prompt'u kullanırsan, yapay zekanın cevabını doğrudan kopyalayıp 4. adımdaki kutuya yapıştırabilirsin —
+        Bu prompt'u kullanırsan, yapay zekanın cevabını doğrudan kopyalayıp 5. adımdaki kutuya yapıştırabilirsin —
         format uyuşursa ekstra düzenlemeye gerek kalmaz.
       </Note>
       <div className={rowClass}>
