@@ -2,26 +2,34 @@ import { useMemo, useState } from "react";
 import { AmpCard } from "./components/AmpCard.tsx";
 import { PresetCard } from "./components/PresetCard.tsx";
 import { PromptCard } from "./components/PromptCard.tsx";
+import { SectionsCard } from "./components/SectionsCard.tsx";
 import { SongCard } from "./components/SongCard.tsx";
 import { useLog } from "./hooks/useLog.ts";
 import { downloadFile, packageFiles } from "./lib/download.ts";
 import { generate, safeFileName, type Generation, type OutputFile } from "./lib/generate.ts";
 import { loadEnabledModules, modulesFor, saveEnabledModules, type OptionalModuleId } from "./lib/modules.ts";
 import { MIN_PRESET_NAME_LENGTH } from "./lib/preset.ts";
-import { buildPrompt } from "./lib/prompt.ts";
-import { parseSettingsText } from "./lib/settings.ts";
+import { buildPrompt, buildSectionsPrompt } from "./lib/prompt.ts";
+import { ampOf, splitBySection, type ToneSection } from "./lib/sections.ts";
+import { parseSettingsText, type ParsedSetting } from "./lib/settings.ts";
 import { presetNameFor, type Song } from "./lib/song.ts";
-import { AMP_PARAM, DEFAULT_AMP, ampFromCode } from "./lib/tone.ts";
+import { AMP_PARAM, DEFAULT_AMP, ampFromCode, type Amp } from "./lib/tone.ts";
 
 export default function App() {
   const { entries, log, clear } = useLog();
   const [enabled, setEnabled] = useState(loadEnabledModules);
   const [song, setSong] = useState<Song>({ title: "", artist: "" });
   const [customName, setCustomName] = useState<string | null>(null);
+  const [sections, setSections] = useState<ToneSection[]>([]);
+  const activeSections = useMemo(() => sections.filter((s) => s.selected && s.name.trim()), [sections]);
 
   // The AI picks the amp; its parameter names are the same for every amp, so the prompt lists RST's.
   const promptModules = useMemo(() => modulesFor(DEFAULT_AMP, enabled), [enabled]);
-  const prompt = useMemo(() => buildPrompt(song, promptModules), [song, promptModules]);
+  const prompt = useMemo(
+    () =>
+      activeSections.length > 0 ? buildSectionsPrompt(song, activeSections, enabled) : buildPrompt(song, promptModules),
+    [song, promptModules, activeSections, enabled],
+  );
   const autoName = presetNameFor(song);
   const presetName = customName ?? autoName;
   const chain = [...new Set(promptModules.map((m) => (m.output.kind === "pst" ? m.output.plugin : "Gojira X")))];
@@ -33,69 +41,92 @@ export default function App() {
     saveEnabledModules(next);
   };
 
+  const howTo = (file: OutputFile) =>
+    file.plugin === "Channel Strip"
+      ? "~/Music/Audio Music Apps/Channel Strip Settings/Track klasörüne koy, Logic'te Setting → User Channel Strip Settings (4 eklenti birden yüklenir)"
+      : file.plugin
+        ? `Logic ${file.plugin} → ayar menüsü → Load`
+        : "Gojira X'te ⋮ → IMPORT";
+
+  /** Builds the files for one tone and logs what was applied; `tag` prefixes the log lines of a section. */
+  const buildFiles = (amp: Amp, parsed: ParsedSetting[], fileBase: string, tag = ""): OutputFile[] => {
+    const modules = modulesFor(amp, enabled);
+    let result: Generation;
+    try {
+      result = generate(amp, modules, parsed, fileBase);
+    } catch (err) {
+      log(`${tag}Dosyalar oluşturulamadı: ${err instanceof Error ? err.message : String(err)}`, "miss");
+      return [];
+    }
+    for (const unknown of result.unknown) {
+      log(`${tag}— bilinmeyen parametre: "${unknown}" (seçilen amfide/eklentilerde yok, atlandı)`, "miss");
+    }
+    for (const { name: paramName, value } of result.invalid) {
+      log(`${tag}— geçersiz seçenek: ${paramName} = ${value} (atlandı)`, "miss");
+    }
+    for (const { module, param, input, resolved } of result.applied) {
+      const label = module.output.kind === "pst" ? `${module.title} · ${param.label}` : param.label;
+      const note = resolved.clamped ? `  (${input} aralık dışıydı)` : "";
+      log(`${tag}✓ ${param.name} → ${label} = ${resolved.display}${note}`, "hit");
+    }
+    for (const module of result.missing) {
+      log(`${tag}— ${module.title} için değer gelmedi, dosyası oluşturulmadı.`, "miss");
+    }
+    if (result.files.length === 0) log(`${tag}Seçili eklentilere uyan hiçbir parametre yok.`, "miss");
+    return result.files;
+  };
+
   const handleDownload = (text: string) => {
     const name = presetName.trim();
     if (name.length < MIN_PRESET_NAME_LENGTH) {
       log(`Preset adı en az ${MIN_PRESET_NAME_LENGTH} karakter olmalı.`, "miss");
       return;
     }
-    const allParsed = parseSettingsText(text);
-    const parsed = allParsed.filter((p) => p.name !== AMP_PARAM);
-    if (parsed.length === 0) {
-      log("Metinde 'parametre: değer' formatında satır bulunamadı.", "miss");
-      return;
-    }
 
-    const chosenAmp = ampFromCode(allParsed.find((p) => p.name === AMP_PARAM)?.value);
-    const currentAmp = chosenAmp ?? DEFAULT_AMP;
-    const modules = modulesFor(currentAmp, enabled);
-    log(
-      chosenAmp
-        ? `✓ amp → ${currentAmp.label} (${currentAmp.name})`
-        : `— "amp" satırı yok ya da geçersiz; ${currentAmp.label} (${currentAmp.name}) kullanıldı.`,
-      chosenAmp ? "hit" : "miss",
-    );
-
-    let result: Generation;
-    try {
-      result = generate(currentAmp, modules, parsed, name);
-    } catch (err) {
-      log(`Dosyalar oluşturulamadı: ${err instanceof Error ? err.message : String(err)}`, "miss");
-      return;
-    }
-
-    for (const unknown of result.unknown) {
-      log(`— bilinmeyen parametre: "${unknown}" (seçilen amfide/eklentilerde yok, atlandı)`, "miss");
-    }
-    for (const { name: paramName, value } of result.invalid) {
-      log(`— geçersiz seçenek: ${paramName} = ${value} (atlandı)`, "miss");
-    }
-    for (const { module, param, input, resolved } of result.applied) {
-      const label = module.output.kind === "pst" ? `${module.title} · ${param.label}` : param.label;
-      const note = resolved.clamped ? `  (${input} aralık dışıydı)` : "";
-      log(`✓ ${param.name} → ${label} = ${resolved.display}${note}`, "hit");
-    }
-    for (const module of result.missing) {
-      log(`— ${module.title} için değer gelmedi, dosyası oluşturulmadı.`, "miss");
-    }
-    if (result.files.length === 0) {
-      log("Seçili eklentilere uyan hiçbir parametre yok; dosya indirilmedi.", "miss");
-      return;
-    }
-
-    const download = packageFiles(result.files, safeFileName(name));
-    downloadFile(download);
-    const howTo = (file: OutputFile) =>
-      file.plugin === "Channel Strip"
-        ? "~/Music/Audio Music Apps/Channel Strip Settings/Track klasörüne koy, Logic'te Setting → User Channel Strip Settings (4 eklenti birden yüklenir)"
-        : file.plugin
-          ? `Logic ${file.plugin} → ayar menüsü → Load`
-          : "Gojira X'te ⋮ → IMPORT";
-    if (result.files.length === 1) {
-      log(`✓ "${download.fileName}" indirildi → ${howTo(result.files[0])}`, "hit");
+    const files: OutputFile[] = [];
+    if (activeSections.length > 0) {
+      const blocks = splitBySection(text, activeSections);
+      for (const section of activeSections) {
+        const block = blocks.get(section.id);
+        const parsed = block ? parseSettingsText(block).filter((p) => p.name !== AMP_PARAM) : [];
+        if (parsed.length === 0) {
+          log(`[${section.name}] metinde "## ${section.name}" başlığı altında ayar bulunamadı, atlandı.`, "miss");
+          continue;
+        }
+        const amp = ampOf(section);
+        log(`[${section.name}] amp → ${amp.label} (${amp.name})`, "hit");
+        files.push(...buildFiles(amp, parsed, `${name} - ${section.name.trim()}`, `[${section.name}] `));
+      }
     } else {
-      log(`✓ "${download.fileName}" indirildi (${result.files.length} dosya):`, "hit");
-      for (const file of result.files) log(`    ${file.fileName} → ${howTo(file)}`, "hit");
+      const allParsed = parseSettingsText(text);
+      const parsed = allParsed.filter((p) => p.name !== AMP_PARAM);
+      if (parsed.length === 0) {
+        log("Metinde 'parametre: değer' formatında satır bulunamadı.", "miss");
+        return;
+      }
+      const chosenAmp = ampFromCode(allParsed.find((p) => p.name === AMP_PARAM)?.value);
+      const currentAmp = chosenAmp ?? DEFAULT_AMP;
+      log(
+        chosenAmp
+          ? `✓ amp → ${currentAmp.label} (${currentAmp.name})`
+          : `— "amp" satırı yok ya da geçersiz; ${currentAmp.label} (${currentAmp.name}) kullanıldı.`,
+        chosenAmp ? "hit" : "miss",
+      );
+      files.push(...buildFiles(currentAmp, parsed, name));
+    }
+
+    if (files.length === 0) {
+      log("Hiç dosya oluşturulamadı; indirme yapılmadı.", "miss");
+      return;
+    }
+
+    const download = packageFiles(files, safeFileName(name));
+    downloadFile(download);
+    if (files.length === 1) {
+      log(`✓ "${download.fileName}" indirildi → ${howTo(files[0])}`, "hit");
+    } else {
+      log(`✓ "${download.fileName}" indirildi (${files.length} dosya):`, "hit");
+      for (const file of files) log(`    ${file.fileName} → ${howTo(file)}`, "hit");
     }
   };
 
@@ -108,11 +139,13 @@ export default function App() {
       </p>
 
       <SongCard song={song} onChange={setSong} />
+      <SectionsCard song={song} sections={sections} onChange={setSections} />
       <AmpCard enabled={enabled} onToggle={handleToggle} />
       <PromptCard prompt={prompt} />
       <PresetCard
         entries={entries}
         chain={chain}
+        sectionCount={activeSections.length}
         name={presetName}
         onNameChange={setCustomName}
         onNameReset={customName !== null && customName !== autoName ? () => setCustomName(null) : undefined}
