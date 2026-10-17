@@ -22,13 +22,15 @@ npm run build    # type-check and build to dist/
 npm run lint     # oxlint
 ```
 
-## Built-in AI
+## AI
 
-When Chrome's built-in AI ([Prompt API](https://developer.chrome.com/docs/ai/prompt-api), Gemini
-Nano) is available, ✦ buttons ask it directly: one splits the song into sections, the other fills in
-the settings. It is free and on-device; the first use downloads the model (needs ≥ 22 GB free disk,
-see `chrome://on-device-internals`). Otherwise the page falls back to copying the prompts into any
-AI and pasting the answers back. See [src/lib/builtinAi.ts](src/lib/builtinAi.ts).
+With a free Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey), the ✦
+buttons ask Gemini directly (one splits the song into sections, the other fills in the settings),
+so nothing has to be copied and pasted. The key is entered in the page, stored only in the
+browser's localStorage and sent only to Google; it is never part of the code or the build. Uses
+`gemini-flash-latest` ([src/lib/gemini.ts](src/lib/gemini.ts)).
+
+Without a key, the page falls back to copying the prompts into any AI and pasting the answers back.
 
 ## How the files are generated
 

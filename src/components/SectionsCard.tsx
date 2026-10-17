@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { BuiltinAi } from "../hooks/useBuiltinAi.ts";
+import type { Ai } from "../hooks/useAi.ts";
 import { buildAnalysisPrompt, newSection, parseSectionsText, type ToneSection } from "../lib/sections.ts";
 import type { Song } from "../lib/song.ts";
 import { AMPS, type AmpId } from "../lib/tone.ts";
@@ -10,7 +10,7 @@ interface Props {
   song: Song;
   sections: ToneSection[];
   onChange: (sections: ToneSection[]) => void;
-  ai: BuiltinAi;
+  ai: Ai;
 }
 
 type CopyState = "idle" | "copied" | "failed";
