@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { BuiltinAi } from "../hooks/useBuiltinAi.ts";
+import type { Ai } from "../hooks/useAi.ts";
 import type { LogEntry } from "../hooks/useLog.ts";
 import { AiButton } from "./AiButton.tsx";
 import { Button, Card, fieldClass, monoBoxClass, Note, rowClass } from "./ui.tsx";
@@ -13,7 +13,7 @@ interface Props {
   onNameReset?: () => void;
   onDownload: (text: string) => void;
   onClearLog: () => void;
-  ai: BuiltinAi;
+  ai: Ai;
   /** The prompt the AI button sends (same as the one shown for copy & paste). */
   prompt: string;
 }

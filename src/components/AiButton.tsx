@@ -1,9 +1,9 @@
 import { useState } from "react";
-import type { BuiltinAi } from "../hooks/useBuiltinAi.ts";
-import { Button } from "./ui.tsx";
+import type { Ai } from "../hooks/useAi.ts";
+import { Button, fieldClass, rowClass } from "./ui.tsx";
 
 interface Props {
-  ai: BuiltinAi;
+  ai: Ai;
   label: string;
   prompt: string;
   /** Receives the answer as it streams in. */
@@ -13,22 +13,12 @@ interface Props {
 }
 
 function errorMessage(err: unknown): string {
-  const name = err instanceof DOMException || err instanceof Error ? err.name : "";
-  switch (name) {
-    case "AbortError":
-      return "Durduruldu.";
-    case "NotSupportedError":
-      return "Yerleşik AI bu isteği desteklemedi (Türkçe resmi olarak desteklenmiyor). Kopyala-yapıştır ile devam edebilirsin.";
-    case "QuotaExceededError":
-      return "Prompt yerleşik AI için çok uzun. Kopyala-yapıştır ile devam edebilirsin.";
-    case "NotAllowedError":
-      return "Chrome model indirmesine izin vermedi; butona tekrar bas.";
-    default:
-      return `Yerleşik AI hata verdi: ${err instanceof Error ? err.message : String(err)}`;
-  }
+  if (err instanceof Error && err.name === "AbortError") return "Durduruldu.";
+  // Gemini errors already carry a readable Turkish message.
+  return err instanceof Error ? err.message : `AI hata verdi: ${String(err)}`;
 }
 
-/** "Ask the built-in AI" button; renders nothing when the browser has no usable built-in AI. */
+/** "Ask the AI" button; renders nothing until a Gemini key is set. */
 export function AiButton({ ai, label, prompt, onText, onDone, disabled }: Props) {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +51,7 @@ export function AiButton({ ai, label, prompt, onText, onDone, disabled }: Props)
       )}
       {running && (
         <span className="text-[0.8rem] text-fg-dim">
-          {ai.download !== null ? `Model indiriliyor… %${Math.round(ai.download * 100)}` : "AI yazıyor…"}
+          AI yazıyor…
         </span>
       )}
       {error && <p className="basis-full text-[0.78rem] leading-[1.6] text-accent">{error}</p>}
@@ -69,23 +59,77 @@ export function AiButton({ ai, label, prompt, onText, onDone, disabled }: Props)
   );
 }
 
-/** One line under the page title saying whether the built-in AI can be used. */
-export function AiStatusNote({ ai }: { ai: BuiltinAi }) {
-  const text: Record<BuiltinAi["status"], string | null> = {
-    checking: null,
-    available:
-      "✦ Tarayıcındaki yerleşik AI (Gemini Nano) hazır: 2. ve 5. adımdaki ✦ butonları kopyala-yapıştır yapmadan doldurur. Ücretsizdir ve cihazında çalışır.",
-    downloadable:
-      "✦ Tarayıcındaki yerleşik AI (Gemini Nano) kullanılabilir: ilk kullanımda Chrome modeli bir kez indirir (birkaç GB), sonra cihazında ücretsiz çalışır.",
-    downloading: "✦ Chrome yerleşik AI modelini indiriyor; bitince ✦ butonlarıyla doğrudan kullanabilirsin.",
-    unavailable:
-      "Chrome'un yerleşik AI'si bu cihazda şu an kullanılamıyor (genelde yetersiz boş disk alanı — en az 22 GB — ya da donanım). Ayrıntı: chrome://on-device-internals. Kopyala-yapıştır ile devam edebilirsin.",
-    unsupported:
-      "Bu tarayıcıda yerleşik AI yok (masaüstünde güncel Chrome gerekir). Prompt'ları kopyalayıp istediğin AI'ye yapıştırarak devam edebilirsin.",
+/** Shows whether the ✦ buttons are connected to Gemini and lets the user add or remove the API key. */
+export function AiSettings({ ai }: { ai: Ai }) {
+  const [key, setKey] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const save = async () => {
+    setError(null);
+    setSaving(true);
+    try {
+      await ai.setGeminiKey(key);
+      setKey("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
   };
-  const message = text[ai.status];
-  if (!message) return null;
+
   return (
-    <p className={`-mt-3 mb-5 text-[0.78rem] leading-[1.6] ${ai.usable ? "text-ok" : "text-fg-dim"}`}>{message}</p>
+    <details className="group mb-5 rounded-[9px] border border-border bg-surface px-4 py-2.5" open={!ai.usable}>
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-[0.82rem] select-none [&::-webkit-details-marker]:hidden">
+        <span className="inline-block text-fg-dim transition-transform group-open:rotate-90">▸</span>
+        {ai.usable ? (
+          <span className="text-ok">✦ AI bağlı: {ai.providerLabel} — 2. ve 5. adımdaki ✦ butonları doğrudan doldurur.</span>
+        ) : (
+          <span className="text-fg">AI bağla (isteğe bağlı) — bağlamazsan prompt'ları kopyala-yapıştır yaparsın.</span>
+        )}
+      </summary>
+      <div className="mt-2.5 text-[0.78rem] leading-[1.6] text-fg-dim">
+        {ai.usable ? (
+          <div className={rowClass}>
+            <span>Gemini API anahtarı bu tarayıcıda kayıtlı.</span>
+            <Button variant="secondary" onClick={ai.clearGeminiKey}>
+              Anahtarı kaldır
+            </Button>
+          </div>
+        ) : (
+          <>
+            <p>
+              Ücretsiz bir Gemini API anahtarı ile AI cevaplarını doğrudan alabilirsin:{" "}
+              <a
+                className="text-accent underline"
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Google AI Studio
+              </a>
+              'dan bir anahtar oluştur (kredi kartı gerekmez) ve buraya yapıştır. Anahtar sadece bu tarayıcıda saklanır,
+              yalnızca Google'a gönderilir.
+            </p>
+            <div className={`${rowClass} mt-2`}>
+              <input
+                type="password"
+                className={`${fieldClass} min-w-56 flex-1`}
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && key.trim() && save()}
+                placeholder="Gemini API anahtarı (AIza…)"
+                aria-label="Gemini API anahtarı"
+                autoComplete="off"
+              />
+              <Button onClick={save} disabled={!key.trim() || saving}>
+                {saving ? "Kontrol ediliyor…" : "Kaydet"}
+              </Button>
+            </div>
+            {error && <p className="mt-1.5 text-accent">{error}</p>}
+          </>
+        )}
+      </div>
+    </details>
   );
 }
