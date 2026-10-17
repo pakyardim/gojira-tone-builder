@@ -1,13 +1,16 @@
 import { useState } from "react";
+import type { BuiltinAi } from "../hooks/useBuiltinAi.ts";
 import { buildAnalysisPrompt, newSection, parseSectionsText, type ToneSection } from "../lib/sections.ts";
 import type { Song } from "../lib/song.ts";
 import { AMPS, type AmpId } from "../lib/tone.ts";
+import { AiButton } from "./AiButton.tsx";
 import { Button, Card, fieldClass, Note, rowClass } from "./ui.tsx";
 
 interface Props {
   song: Song;
   sections: ToneSection[];
   onChange: (sections: ToneSection[]) => void;
+  ai: BuiltinAi;
 }
 
 type CopyState = "idle" | "copied" | "failed";
@@ -18,7 +21,7 @@ const COPY_LABELS: Record<CopyState, string> = {
   failed: "Kopyalanamadı",
 };
 
-export function SectionsCard({ song, sections, onChange }: Props) {
+export function SectionsCard({ song, sections, onChange, ai }: Props) {
   const [copyState, setCopyState] = useState<CopyState>("idle");
   const [text, setText] = useState("");
   const [parseFailed, setParseFailed] = useState(false);
@@ -33,8 +36,8 @@ export function SectionsCard({ song, sections, onChange }: Props) {
     }
   };
 
-  const load = () => {
-    const parsed = parseSectionsText(text);
+  const load = (answer = text) => {
+    const parsed = parseSectionsText(answer);
     setParseFailed(parsed.length === 0);
     if (parsed.length === 0) return;
     onChange(parsed);
@@ -54,6 +57,16 @@ export function SectionsCard({ song, sections, onChange }: Props) {
         bölüm seçmezsen tek bir ton istenir.
       </Note>
       <div className={rowClass}>
+        <AiButton
+          ai={ai}
+          label="AI ile bölümle"
+          prompt={buildAnalysisPrompt(song)}
+          onText={(t) => {
+            setParseFailed(false);
+            setText(t);
+          }}
+          onDone={load}
+        />
         <Button variant="secondary" onClick={copy}>
           {COPY_LABELS[copyState]}
         </Button>
@@ -69,7 +82,7 @@ export function SectionsCard({ song, sections, onChange }: Props) {
         aria-label="AI'nin önerdiği bölümler"
       />
       <div className={`${rowClass} mt-2.5`}>
-        <Button onClick={load} disabled={!text.trim()}>
+        <Button onClick={() => load()} disabled={!text.trim()}>
           Bölümleri oluştur
         </Button>
         {sections.length > 0 && (

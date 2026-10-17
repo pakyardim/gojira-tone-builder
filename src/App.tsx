@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
+import { AiStatusNote } from "./components/AiButton.tsx";
 import { AmpCard } from "./components/AmpCard.tsx";
 import { PresetCard } from "./components/PresetCard.tsx";
 import { PromptCard } from "./components/PromptCard.tsx";
 import { SectionsCard } from "./components/SectionsCard.tsx";
 import { SongCard } from "./components/SongCard.tsx";
+import { useBuiltinAi } from "./hooks/useBuiltinAi.ts";
 import { useLog } from "./hooks/useLog.ts";
 import { downloadFile, packageFiles } from "./lib/download.ts";
 import { generate, safeFileName, type Generation, type OutputFile } from "./lib/generate.ts";
@@ -17,6 +19,7 @@ import { AMP_PARAM, DEFAULT_AMP, ampFromCode, type Amp } from "./lib/tone.ts";
 
 export default function App() {
   const { entries, log, clear } = useLog();
+  const ai = useBuiltinAi();
   const [enabled, setEnabled] = useState(loadEnabledModules);
   const [song, setSong] = useState<Song>({ title: "", artist: "" });
   const [customName, setCustomName] = useState<string | null>(null);
@@ -137,9 +140,10 @@ export default function App() {
         AI'dan aldığın ayarları yapıştır; Archetype Gojira X preset'i ve istersen Logic'in Channel EQ, Compressor ve
         Noise Gate ayar dosyaları olarak indir. Her şey tarayıcında olur, hiçbir yere gönderilmez.
       </p>
+      <AiStatusNote ai={ai} />
 
       <SongCard song={song} onChange={setSong} />
-      <SectionsCard song={song} sections={sections} onChange={setSections} />
+      <SectionsCard song={song} sections={sections} onChange={setSections} ai={ai} />
       <AmpCard enabled={enabled} onToggle={handleToggle} />
       <PromptCard prompt={prompt} />
       <PresetCard
@@ -151,6 +155,8 @@ export default function App() {
         onNameReset={customName !== null && customName !== autoName ? () => setCustomName(null) : undefined}
         onDownload={handleDownload}
         onClearLog={clear}
+        ai={ai}
+        prompt={prompt}
       />
     </div>
   );

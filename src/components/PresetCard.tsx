@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import type { BuiltinAi } from "../hooks/useBuiltinAi.ts";
 import type { LogEntry } from "../hooks/useLog.ts";
+import { AiButton } from "./AiButton.tsx";
 import { Button, Card, fieldClass, monoBoxClass, Note, rowClass } from "./ui.tsx";
 
 interface Props {
@@ -11,6 +13,9 @@ interface Props {
   onNameReset?: () => void;
   onDownload: (text: string) => void;
   onClearLog: () => void;
+  ai: BuiltinAi;
+  /** The prompt the AI button sends (same as the one shown for copy & paste). */
+  prompt: string;
 }
 
 const PLACEHOLDER = `gain: 72
@@ -31,6 +36,8 @@ export function PresetCard({
   onNameReset,
   onDownload,
   onClearLog,
+  ai,
+  prompt,
 }: Props) {
   const logicPlugins = chain.filter((p) => p !== "Gojira X");
   const [text, setText] = useState("");
@@ -43,6 +50,11 @@ export function PresetCard({
 
   return (
     <Card title="5 · Dosyaları Oluştur">
+      {ai.usable && (
+        <div className={`${rowClass} mb-2.5`}>
+          <AiButton ai={ai} label="AI ile doldur" prompt={prompt} onText={setText} />
+        </div>
+      )}
       <textarea
         className={`${fieldClass} block min-h-32.5 w-full resize-y font-mono leading-normal`}
         placeholder={PLACEHOLDER}
